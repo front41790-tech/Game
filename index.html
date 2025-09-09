@@ -1,81 +1,109 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>โพสต์สำเร็จรูป</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 20px; }
-        h1, h2 { color: #333; }
-        .message-box { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .message-text { font-size: 18px; margin-bottom: 10px; }
-        button { margin-right: 5px; margin-top: 5px; padding: 5px 10px; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; background: #eee; }
-        button:hover { background: #ddd; }
-        input[type="text"] { width: 70%; padding: 8px; margin-right: 5px; border-radius: 5px; border: 1px solid #ccc; }
-    </style>
+  <meta charset="UTF-8">
+  <title>เกมจับกล่อง</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #1e1e2e;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    #gameArea {
+      position: relative;
+      width: 500px;
+      height: 400px;
+      border: 2px solid #fff;
+      background: #2e2e3e;
+      overflow: hidden;
+    }
+    .box {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: red;
+      cursor: pointer;
+    }
+    #score, #time {
+      font-size: 20px;
+      margin: 10px;
+    }
+    #startBtn {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      background: limegreen;
+      border: none;
+      border-radius: 5px;
+      color: white;
+    }
+  </style>
 </head>
 <body>
-    <h1>โพสต์สำเร็จรูป</h1>
+  <h1>🎮 เกมจับกล่อง 🎮</h1>
+  <div id="score">คะแนน: 0</div>
+  <div id="time">เวลา: 30</div>
+  <button id="startBtn">เริ่มเกม</button>
+  <div id="gameArea"></div>
 
-    <div id="messages"></div>
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const scoreEl = document.getElementById("score");
+    const timeEl = document.getElementById("time");
+    const startBtn = document.getElementById("startBtn");
 
-    <h2>สร้างข้อความเอง</h2>
-    <input type="text" id="customMessage" placeholder="พิมพ์ข้อความของคุณ">
-    <button onclick="copyCustom()">คัดลอก</button>
-    <button onclick="shareCustom()">แชร์ไป Facebook</button>
+    let score = 0;
+    let time = 30;
+    let timer;
+    let gameInterval;
 
-    <script>
-        const messages = [
-            "ร้านนี้อร่อยมาลองกิน",
-            "พรุ่งนี้มีโปรลดราคาอย่าพลาด",
-            "อาหารที่นี่อร่อยทุกอย่าง",
-            "ชวนเพื่อนมากินด้วยกันสิ",
-            "เมนูใหม่มาแล้ว ลองเลย!"
-        ];
+    function startGame() {
+      score = 0;
+      time = 30;
+      scoreEl.textContent = "คะแนน: " + score;
+      timeEl.textContent = "เวลา: " + time;
+      startBtn.disabled = true;
 
-        const container = document.getElementById('messages');
-
-        messages.forEach(msg => {
-            const box = document.createElement('div');
-            box.className = 'message-box';
-
-            const text = document.createElement('div');
-            text.className = 'message-text';
-            text.textContent = msg;
-
-            const copyBtn = document.createElement('button');
-            copyBtn.textContent = 'คัดลอก';
-            copyBtn.onclick = () => {
-                navigator.clipboard.writeText(msg);
-                alert('คัดลอกแล้ว!');
-            };
-
-            const shareBtn = document.createElement('button');
-            shareBtn.textContent = 'แชร์ไป Facebook';
-            shareBtn.onclick = () => {
-                const url = `https://www.facebook.com/sharer/sharer.php?u=&quote=${encodeURIComponent(msg)}`;
-                window.open(url, '_blank');
-            };
-
-            box.appendChild(text);
-            box.appendChild(copyBtn);
-            box.appendChild(shareBtn);
-            container.appendChild(box);
-        });
-
-        function copyCustom() {
-            const msg = document.getElementById('customMessage').value;
-            if(msg.trim() === "") { alert("กรุณาพิมพ์ข้อความก่อน!"); return; }
-            navigator.clipboard.writeText(msg);
-            alert('คัดลอกแล้ว!');
+      timer = setInterval(() => {
+        time--;
+        timeEl.textContent = "เวลา: " + time;
+        if (time <= 0) {
+          endGame();
         }
+      }, 1000);
 
-        function shareCustom() {
-            const msg = document.getElementById('customMessage').value;
-            if(msg.trim() === "") { alert("กรุณาพิมพ์ข้อความก่อน!"); return; }
-            const url = `https://www.facebook.com/sharer/sharer.php?u=&quote=${encodeURIComponent(msg)}`;
-            window.open(url, '_blank');
-        }
-    </script>
+      spawnBox();
+      gameInterval = setInterval(spawnBox, 1000);
+    }
+
+    function spawnBox() {
+      const box = document.createElement("div");
+      box.classList.add("box");
+      box.style.top = Math.random() * (350) + "px";
+      box.style.left = Math.random() * (450) + "px";
+      box.addEventListener("click", () => {
+        score++;
+        scoreEl.textContent = "คะแนน: " + score;
+        box.remove();
+      });
+      gameArea.appendChild(box);
+      setTimeout(() => box.remove(), 900);
+    }
+
+    function endGame() {
+      clearInterval(timer);
+      clearInterval(gameInterval);
+      startBtn.disabled = false;
+      alert("หมดเวลา! คะแนนของคุณคือ: " + score);
+    }
+
+    startBtn.addEventListener("click", startGame);
+  </script>
 </body>
 </html>
