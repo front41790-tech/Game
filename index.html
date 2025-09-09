@@ -1,109 +1,191 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>เกมจับกล่อง</title>
-  <style>
-    body {
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: #1e1e2e;
-      color: white;
-      font-family: Arial, sans-serif;
-    }
-    #gameArea {
-      position: relative;
-      width: 500px;
-      height: 400px;
-      border: 2px solid #fff;
-      background: #2e2e3e;
-      overflow: hidden;
-    }
-    .box {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      background: red;
-      cursor: pointer;
-    }
-    #score, #time {
-      font-size: 20px;
-      margin: 10px;
-    }
-    #startBtn {
-      padding: 10px 20px;
-      font-size: 18px;
-      cursor: pointer;
-      background: limegreen;
-      border: none;
-      border-radius: 5px;
-      color: white;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Aim Trainer</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #1e1e2e;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    #container {
+      display: flex;
+      gap: 20px;
+    }
+    #gameArea {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      border: 2px solid #fff;
+      background: #2e2e3e;
+      overflow: hidden;
+    }
+    .target {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: red;
+      border-radius: 50%;
+      cursor: crosshair;
+      transition: transform 0.1s;
+    }
+    #score, #time {
+      font-size: 20px;
+      margin: 10px;
+    }
+    #controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    #startBtn, .time-btn {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      background: limegreen;
+      border: none;
+      border-radius: 5px;
+      color: white;
+    }
+    .time-btn {
+      background: #4a4a5e;
+    }
+    #topScore {
+      width: 200px;
+      padding: 10px;
+      background: #2e2e3e;
+      border: 2px solid #fff;
+    }
+    #topScore h3 {
+      text-align: center;
+      margin-top: 0;
+    }
+    #topScore ol {
+      padding-left: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>🎮 เกมจับกล่อง 🎮</h1>
-  <div id="score">คะแนน: 0</div>
-  <div id="time">เวลา: 30</div>
-  <button id="startBtn">เริ่มเกม</button>
-  <div id="gameArea"></div>
+  <h1>🎯 Aim Trainer 🎯</h1>
+  <div id="controls">
+    <button class="time-btn" data-time="30">30 วินาที</button>
+    <button class="time-btn" data-time="60">60 วินาที</button>
+    <button class="time-btn" data-time="90">90 วินาที</button>
+  </div>
+  <button id="startBtn">เริ่มเกม</button>
+  <div id="score">คะแนน: 0</div>
+  <div id="time">เวลา: 0</div>
+  <div id="container">
+    <div id="gameArea"></div>
+    <div id="topScore">
+      <h3>Top Score 🏆</h3>
+      <ol id="scoreList"></ol>
+    </div>
+  </div>
 
-  <script>
-    const gameArea = document.getElementById("gameArea");
-    const scoreEl = document.getElementById("score");
-    const timeEl = document.getElementById("time");
-    const startBtn = document.getElementById("startBtn");
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const scoreEl = document.getElementById("score");
+    const timeEl = document.getElementById("time");
+    const startBtn = document.getElementById("startBtn");
+    const timeBtns = document.querySelectorAll(".time-btn");
+    const scoreListEl = document.getElementById("scoreList");
 
-    let score = 0;
-    let time = 30;
-    let timer;
-    let gameInterval;
+    let score = 0;
+    let gameTime = 0;
+    let timer;
+    let gameActive = false;
+    let topScores = JSON.parse(localStorage.getItem('aimTrainerScores')) || [];
 
-    function startGame() {
-      score = 0;
-      time = 30;
-      scoreEl.textContent = "คะแนน: " + score;
-      timeEl.textContent = "เวลา: " + time;
-      startBtn.disabled = true;
+    function updateTopScores(newScore) {
+      topScores.push(newScore);
+      topScores.sort((a, b) => b - a);
+      topScores = topScores.slice(0, 5);
+      localStorage.setItem('aimTrainerScores', JSON.stringify(topScores));
+      renderTopScores();
+    }
 
-      timer = setInterval(() => {
-        time--;
-        timeEl.textContent = "เวลา: " + time;
-        if (time <= 0) {
-          endGame();
-        }
-      }, 1000);
+    function renderTopScores() {
+      scoreListEl.innerHTML = '';
+      topScores.forEach((s) => {
+        const li = document.createElement("li");
+        li.textContent = s;
+        scoreListEl.appendChild(li);
+      });
+    }
 
-      spawnBox();
-      gameInterval = setInterval(spawnBox, 1000);
-    }
+    function createTarget() {
+      const target = document.createElement("div");
+      target.classList.add("target");
+      const x = Math.random() * (gameArea.offsetWidth - 20);
+      const y = Math.random() * (gameArea.offsetHeight - 20);
+      target.style.left = `${x}px`;
+      target.style.top = `${y}px`;
+      
+      target.addEventListener("click", () => {
+        if (gameActive) {
+          score++;
+          scoreEl.textContent = `คะแนน: ${score}`;
+          target.remove();
+          createTarget();
+        }
+      });
+      gameArea.appendChild(target);
+    }
 
-    function spawnBox() {
-      const box = document.createElement("div");
-      box.classList.add("box");
-      box.style.top = Math.random() * (350) + "px";
-      box.style.left = Math.random() * (450) + "px";
-      box.addEventListener("click", () => {
-        score++;
-        scoreEl.textContent = "คะแนน: " + score;
-        box.remove();
-      });
-      gameArea.appendChild(box);
-      setTimeout(() => box.remove(), 900);
-    }
+    function startGame() {
+      if (gameTime === 0) {
+        alert("กรุณาเลือกเวลาก่อนเริ่มเกม");
+        return;
+      }
+      gameActive = true;
+      score = 0;
+      scoreEl.textContent = `คะแนน: ${score}`;
+      
+      gameArea.innerHTML = '';
+      createTarget();
 
-    function endGame() {
-      clearInterval(timer);
-      clearInterval(gameInterval);
-      startBtn.disabled = false;
-      alert("หมดเวลา! คะแนนของคุณคือ: " + score);
-    }
+      startBtn.disabled = true;
+      timeBtns.forEach(btn => btn.disabled = true);
 
-    startBtn.addEventListener("click", startGame);
-  </script>
+      timer = setInterval(() => {
+        gameTime--;
+        timeEl.textContent = `เวลา: ${gameTime}`;
+        if (gameTime <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      gameActive = false;
+      clearInterval(timer);
+      updateTopScores(score);
+      alert(`หมดเวลา! คะแนนของคุณคือ: ${score}`);
+      
+      startBtn.disabled = false;
+      timeBtns.forEach(btn => btn.disabled = false);
+    }
+
+    timeBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        gameTime = parseInt(btn.dataset.time);
+        timeEl.textContent = `เวลา: ${gameTime}`;
+        timeBtns.forEach(b => b.style.background = '#4a4a5e');
+        btn.style.background = 'limegreen';
+      });
+    });
+
+    startBtn.addEventListener("click", startGame);
+
+    renderTopScores();
+  </script>
 </body>
 </html>
